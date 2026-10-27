@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en-AU">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Connect WhatsApp – Upright Migration Consultants</title>
+<style>
+  :root {
+    --navy: #13315C;
+    --sky: #3E8EDE;
+    --paper: #FBFCFE;
+    --ink: #1E2733;
+    --muted: #5B6B7F;
+    --line: #D6DEE8;
+    --ok: #1F9D57;
+    --warn: #B4471F;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --navy: #9CC3F2;
+      --sky: #6AA9EA;
+      --paper: #0F1724;
+      --ink: #E6ECF3;
+      --muted: #9AA9BB;
+      --line: #2A3647;
+      --ok: #4CC587;
+      --warn: #F08A64;
+      color-scheme: dark;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font: 17px/1.55 "Avenir Next", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+  }
+  main { max-width: 640px; margin: 0 auto; padding: 56px 24px 72px; }
+  .brand { color: var(--muted); font-size: 15px; margin: 0 0 40px; }
+  h1 { font-size: 34px; line-height: 1.15; margin: 0 0 16px; color: var(--navy); font-weight: 650; }
+  p.lead { margin: 0 0 32px; max-width: 58ch; }
+  ol { padding-left: 1.3em; margin: 0 0 36px; }
+  ol li { margin-bottom: 10px; padding-left: 4px; }
+  button {
+    font: inherit; font-weight: 600; font-size: 18px;
+    color: #fff; background: var(--navy);
+    border: 0; border-radius: 10px; padding: 16px 28px; cursor: pointer;
+  }
+  @media (prefers-color-scheme: dark) { button { color: #0F1724; } }
+  button:hover { background: var(--sky); }
+  button:focus-visible { outline: 3px solid var(--sky); outline-offset: 3px; }
+  button:disabled { opacity: .5; cursor: not-allowed; }
+  #status { margin-top: 32px; border-top: 1px solid var(--line); padding-top: 24px; min-height: 2em; }
+  #status .ok { color: var(--ok); font-weight: 600; }
+  #status .warn { color: var(--warn); font-weight: 600; }
+  dl { display: grid; grid-template-columns: max-content 1fr; gap: 6px 16px; margin: 16px 0 0; }
+  dt { color: var(--muted); }
+  dd { margin: 0; font-variant-numeric: tabular-nums; word-break: break-all; }
+  .note { color: var(--muted); font-size: 15px; margin-top: 40px; }
+</style>
+</head>
+<body>
+<main>
+  <p class="brand">Upright Migration Consultants · internal setup page</p>
+  <h1>Connect our WhatsApp Business number</h1>
+  <p class="lead">This links +61 432 982 061 to our Meta app so the Claude assistant can reply on WhatsApp, while staff keep using the WhatsApp Business app on the phone.</p>
+
+  <ol>
+    <li>Have the iPhone with the WhatsApp Business app ready.</li>
+    <li>Click <strong>Connect WhatsApp</strong> and log in to Facebook as an admin of Upright Migration Consultants.</li>
+    <li>Choose the existing business portfolio and the option to connect your existing WhatsApp Business app.</li>
+    <li>On the iPhone: Settings → Account → Business Platform → Connect to the Business Platform, then scan the QR code shown here.</li>
+    <li>Choose to share chat history, then finish the steps on screen.</li>
+  </ol>
+
+  <button id="connect" type="button" disabled>Connect WhatsApp</button>
+  <div id="status" role="status" aria-live="polite">Loading Facebook sign-in…</div>
+
+  <p class="note">Nothing on this page is stored. Once connected, send the WhatsApp account ID and phone number ID shown above to Claude in the Upright project.</p>
+</main>
+
+<script>
+  // ---- Settings: fill CONFIG_ID after creating the Facebook Login for Business configuration ----
+  const APP_ID = "2051730178815355";              // Upright DM Assistant
+  const CONFIG_ID = "PASTE_CONFIGURATION_ID";     // Facebook Login for Business > Configurations
+  const GRAPH_VERSION = "v21.0";
+  // ------------------------------------------------------------------------------------------------
+
+  const statusEl = document.getElementById("status");
+  const button = document.getElementById("connect");
+  const result = {};
+
+  function show(html) { statusEl.innerHTML = html; }
+
+  function renderResult() {
+    const rows = [
+      ["WhatsApp account ID", result.waba_id],
+      ["Phone number ID", result.phone_number_id],
+      ["Business ID", result.business_id],
+      ["Authorisation", result.code ? "Received (not shown)" : null]
+    ].filter(r => r[1]);
+    if (!rows.length) return;
+    show('<span class="ok">Connected.</span> Copy these and send them to Claude:' +
+      '<dl>' + rows.map(r => `<dt>${r[0]}</dt><dd>${r[1]}</dd>`).join("") + '</dl>');
+  }
+
+  // Embedded Signup reports progress through postMessage
+  window.addEventListener("message", (event) => {
+    if (!/(^|\.)facebook\.com$/.test(new URL(event.origin).hostname)) return;
+    let data;
+    try { data = JSON.parse(event.data); } catch { return; }
+    if (data.type !== "WA_EMBEDDED_SIGNUP") return;
+    if (data.event === "CANCEL") {
+      const step = data.data && data.data.current_step ? ` at step “${data.data.current_step}”` : "";
+      show(`<span class="warn">Setup was closed${step}.</span> Click Connect WhatsApp to start again.`);
+      return;
+    }
+    if (data.event === "ERROR") {
+      show(`<span class="warn">Meta reported an error:</span> ${(data.data && data.data.error_message) || "unknown error"}. Click Connect WhatsApp to try again.`);
+      return;
+    }
+    Object.assign(result, data.data || {});
+    renderResult();
+  });
+
+  window.fbAsyncInit = function () {
+    FB.init({ appId: APP_ID, autoLogAppEvents: true, xfbml: false, version: GRAPH_VERSION });
+    if (CONFIG_ID.startsWith("PASTE")) {
+      show('<span class="warn">Not ready yet:</span> the configuration ID still needs to be added to this page.');
+      return;
+    }
+    button.disabled = false;
+    show("Ready. Click Connect WhatsApp to begin.");
+  };
+
+  button.addEventListener("click", () => {
+    show("A Facebook window should open. If nothing happens, allow pop-ups for this site.");
+    FB.login((response) => {
+      if (response.authResponse && response.authResponse.code) {
+        result.code = true;
+        renderResult();
+        if (!result.waba_id) show('<span class="ok">Signed in.</span> Waiting for the WhatsApp details…');
+      } else if (!result.waba_id) {
+        show('<span class="warn">Sign-in did not finish.</span> Click Connect WhatsApp to try again.');
+      }
+    }, {
+      config_id: CONFIG_ID,
+      response_type: "code",
+      override_default_response_type: true,
+      extras: {
+        setup: {},
+        featureType: "whatsapp_business_app_onboarding",   // coexistence: keep using the WhatsApp Business app
+        sessionInfoVersion: "3"
+      }
+    });
+  });
+</script>
+<script async defer crossorigin="anonymous" src="https://connect.facebook.net/en_US/sdk.js"></script>
+</body>
+</html>
