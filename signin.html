@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<meta name="referrer" content="no-referrer">
+<title>Signing in… – Upright Call Back Sheet</title>
+<style>body{font-family:system-ui,-apple-system,"Segoe UI",sans-serif;background:#f4f7fa;color:#10283f;display:grid;place-items:center;min-height:100vh;margin:0}</style>
+</head>
+<body>
+<p>Signing in to the Upright Call Back Sheet…</p>
+<script>
+// Google adds "authuser" to the return address when Chrome has several accounts, and Apps Script fails on it.
+// This page passes only the sign-in result on to the Call Back Sheet's fixed address. It holds no secrets.
+(function () {
+  var SHEET = "https://script.google.com/macros/s/AKfycbw01d8au9rgUPLWNdcHd5x1L99tw7R7zz4NpVFH5wyKyH4H2fcTvU0v2hPl9VulebVS/exec";
+  var p = new URLSearchParams(location.search), keep = new URLSearchParams();
+  ["code", "state", "error"].forEach(function (k) { if (p.has(k)) keep.set(k, p.get(k)); });
+  location.replace(SHEET + (keep.toString() ? "?" + keep.toString() : ""));
+})();
+</script>
+</body>
+</html>
