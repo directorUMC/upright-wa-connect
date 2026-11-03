@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<meta name="referrer" content="no-referrer">
+<meta name="theme-color" content="#0B2E52">
+<title>Upright Call Back Sheet</title>
+<style>
+  html, body { height: 100%; margin: 0; }
+  body { background: linear-gradient(155deg, #0B2E52 0%, #14528C 46%, #1A7BC2 100%); font-family: system-ui, -apple-system, "Segoe UI", sans-serif; color: #fff; overflow: hidden; }
+  #sheet { position: fixed; left: 0; right: 0; top: calc(-1 * var(--crop, 0px)); width: 100%; height: calc(100% + var(--crop, 0px)); border: 0; display: block; background: transparent; }
+  #wait { position: fixed; inset: 0; display: grid; place-items: center; gap: 14px; align-content: center; transition: opacity .3s; }
+  #wait.gone { opacity: 0; pointer-events: none; }
+  .spin { width: 34px; height: 34px; border-radius: 50%; border: 3px solid rgba(255,255,255,.3); border-top-color: #F2C230; animation: s 0.9s linear infinite; }
+  @keyframes s { to { transform: rotate(360deg); } }
+  #wait p { margin: 0; font-size: 15px; opacity: .9; }
+  #wait a { color: #fff; }
+</style>
+</head>
+<body>
+<div id="wait"><div class="spin"></div><p>Opening the Upright Call Back Sheet…</p><p id="slow" hidden>Taking a while? <a id="direct" href="#">Open it directly</a></p></div>
+<iframe id="sheet" title="Upright Call Back Sheet" allow="clipboard-write" referrerpolicy="no-referrer"></iframe>
+<script>
+/* Upright Call Back Sheet — holder page.
+   Shows the Apps Script web app inside this page as a "credentialless" frame, so Google never mixes up the Chrome
+   accounts (no "Sorry, unable to open the file"). The frame has no lasting storage of its own, so this page keeps the
+   sheet's small per-device settings (sign-in until midnight, recent names, text size) for it. No secrets live here. */
+(function () {
+  var SHEET = "https://script.google.com/macros/s/AKfycbw01d8au9rgUPLWNdcHd5x1L99tw7R7zz4NpVFH5wyKyH4H2fcTvU0v2hPl9VulebVS/exec";
+  var CROP = 0;   // height of Google's notice bar to hide, in px (set after testing)
+  var frame = document.getElementById("sheet");
+  document.getElementById("direct").href = SHEET;
+  if (CROP) document.documentElement.style.setProperty("--crop", CROP + "px");
+
+  // Google's sign-in comes back here with ?code=…&state=… (via signin.html); pass only those on to the sheet.
+  var p = new URLSearchParams(location.search), keep = new URLSearchParams();
+  ["code", "state", "error"].forEach(function (k) { if (p.has(k)) keep.set(k, p.get(k)); });
+  if (location.search) history.replaceState(null, "", location.pathname);
+
+  frame.setAttribute("credentialless", "");
+  frame.src = SHEET + (keep.toString() ? "?" + keep.toString() : "");
+  frame.addEventListener("load", function () { setTimeout(function () { document.getElementById("wait").className = "gone"; }, 400); });
+  setTimeout(function () { document.getElementById("slow").hidden = false; }, 12000);
+
+  function ls(fn) { try { return fn(); } catch (e) { return null; } }
+  function fromSheet(src) {   // true only for windows inside our own frame
+    for (var w = src, i = 0; w && i < 6; i++) { if (w === frame.contentWindow) return true; var up = ls(function () { return w.parent; }); if (!up || up === w) break; w = up; }
+    return false;
+  }
+  window.addEventListener("message", function (e) {
+    var d = e.data; if (!d || typeof d.type !== "string" || !fromSheet(e.source)) return;
+    if (d.type === "ucb-hello") {
+      var items = {};
+      ls(function () { for (var i = 0; i < localStorage.length; i++) { var k = localStorage.key(i); if (k.indexOf("ucb:") === 0) items[k.slice(4)] = JSON.parse(localStorage.getItem(k)); } });
+      e.source.postMessage({ type: "ucb-store", items: items }, e.origin);
+      document.getElementById("wait").className = "gone";
+    } else if (d.type === "ucb-set" && typeof d.k === "string" && d.k.length < 120) {
+      ls(function () { if (d.v == null) localStorage.removeItem("ucb:" + d.k); else localStorage.setItem("ucb:" + d.k, JSON.stringify(d.v)); });
+    } else if (d.type === "ucb-signin") {
+      ls(function () { localStorage.setItem("ucb-return", String(Date.now())); });
+    }
+  });
+})();
+</script>
+</body>
+</html>
