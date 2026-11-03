@@ -17,12 +17,7 @@
   var SHEET = "https://script.google.com/macros/s/AKfycbw01d8au9rgUPLWNdcHd5x1L99tw7R7zz4NpVFH5wyKyH4H2fcTvU0v2hPl9VulebVS/exec";
   var p = new URLSearchParams(location.search), keep = new URLSearchParams();
   ["code", "state", "error"].forEach(function (k) { if (p.has(k)) keep.set(k, p.get(k)); });
-  var back = SHEET;
-  try {   // started from the Upright holder page (callbacks/)? Then go back there, so the sheet opens inside it.
-    var t = +localStorage.getItem("ucb-return") || 0;
-    if (Date.now() - t < 15 * 60 * 1000) back = new URL("callbacks/", location.href).href;
-    localStorage.removeItem("ucb-return");
-  } catch (e) {}
+  var back = "https://calls.uprightmigration.com.au/";   // the staff page; the old copy here was removed
   location.replace(back + (keep.toString() ? "?" + keep.toString() : ""));
 })();
 </script>
