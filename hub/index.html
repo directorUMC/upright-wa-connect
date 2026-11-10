@@ -46,7 +46,7 @@
   }
   window.addEventListener("message", function (e) {
     var d = e.data; if (!d || typeof d.type !== "string" || !fromHub(e.source)) return;
-    if (!/^https:\/\/[a-z0-9-]+\.script\.googleusercontent\.com$/.test(e.origin)) return;
+    if (!/^https:\/\/[a-z0-9-]+\.googleusercontent\.com$/.test(e.origin)) return;   // the Hub runs on *-script.googleusercontent.com
     if (d.type === "hub-hello") {
       var items = {};
       ls(function () { for (var i = 0; i < localStorage.length; i++) { var k = localStorage.key(i); if (k.indexOf("umc-hub:") === 0) items[k.slice(8)] = JSON.parse(localStorage.getItem(k)); } });
