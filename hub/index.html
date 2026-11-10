@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en-AU">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<meta name="referrer" content="no-referrer">
+<meta name="theme-color" content="#0B2E52">
+<title>UMC Staff Hub</title>
+<style>
+  html, body { height: 100%; margin: 0; }
+  body { background: linear-gradient(155deg, #0B2E52 0%, #14528C 46%, #1A7BC2 100%); font-family: system-ui, -apple-system, "Segoe UI", sans-serif; color: #fff; overflow: hidden; }
+  #hub { position: fixed; inset: 0; width: 100%; height: 100%; border: 0; display: block; background: transparent; }
+  #wait { position: fixed; inset: 0; display: grid; place-items: center; gap: 14px; align-content: center; transition: opacity .3s; }
+  #wait.gone { opacity: 0; pointer-events: none; }
+  .spin { width: 34px; height: 34px; border-radius: 50%; border: 3px solid rgba(255,255,255,.3); border-top-color: #F2C230; animation: s .9s linear infinite; }
+  @keyframes s { to { transform: rotate(360deg); } }
+  #wait p { margin: 0; font-size: 15px; opacity: .9; text-align: center; padding: 0 16px; }
+  #wait a { color: #fff; }
+</style>
+</head>
+<body>
+<div id="wait"><div class="spin" aria-hidden="true"></div><p>Opening the UMC Staff Hub…</p><p id="slow" hidden>Taking a while? Check the internet connection, then refresh this page.</p></div>
+<iframe id="hub" title="UMC Staff Hub" allow="clipboard-write; fullscreen"></iframe>
+<script>
+/* UMC Staff Hub — holder page (same idea as the Call Back Sheet's).
+   Shows the Apps Script web app inside a "credentialless" frame, so Google never mixes up the Chrome
+   accounts (no "Sorry, unable to open the file"). Google's sign-in comes back here; only code/state/error
+   are passed on (Google's "authuser" is dropped). The frame has no lasting storage of its own, so this page
+   keeps the Hub's small per-device settings (sign-in until midnight, recent names). No secrets live here. */
+(function () {
+  var HUB = "https://script.google.com/macros/s/AKfycbwcF5ZOVAOZNKTQyKTvxB7vZCEMFYGXS7HEfAU59vsotZayAPkVjmUDgHzygd2WMeuRGw/exec";
+  var frame = document.getElementById("hub");
+  var p = new URLSearchParams(location.search), keep = new URLSearchParams();
+  ["code", "state", "error"].forEach(function (k) { if (p.has(k)) keep.set(k, p.get(k)); });
+  if (location.search) history.replaceState(null, "", location.pathname + location.hash);
+  frame.setAttribute("credentialless", "");
+  frame.src = HUB + (keep.toString() ? "?" + keep.toString() : "");
+  frame.addEventListener("load", function () { setTimeout(function () { document.getElementById("wait").className = "gone"; }, 600); });
+  setTimeout(function () { document.getElementById("slow").hidden = false; }, 12000);
+
+  function ls(fn) { try { return fn(); } catch (e) { return null; } }
+  function fromHub(src) {   // true only for windows inside our own frame
+    for (var w = src, i = 0; w && i < 6; i++) { if (w === frame.contentWindow) return true; var up = ls(function () { return w.parent; }); if (!up || up === w) break; w = up; }
+    return false;
+  }
+  window.addEventListener("message", function (e) {
+    var d = e.data; if (!d || typeof d.type !== "string" || !fromHub(e.source)) return;
+    if (!/^https:\/\/[a-z0-9-]+\.script\.googleusercontent\.com$/.test(e.origin)) return;
+    if (d.type === "hub-hello") {
+      var items = {};
+      ls(function () { for (var i = 0; i < localStorage.length; i++) { var k = localStorage.key(i); if (k.indexOf("umc-hub:") === 0) items[k.slice(8)] = JSON.parse(localStorage.getItem(k)); } });
+      e.source.postMessage({ type: "hub-store", items: items }, e.origin);
+      document.getElementById("wait").className = "gone";
+    } else if (d.type === "hub-set" && typeof d.k === "string" && d.k.length < 120) {
+      ls(function () { if (d.v == null) localStorage.removeItem("umc-hub:" + d.k); else localStorage.setItem("umc-hub:" + d.k, JSON.stringify(d.v)); });
+    }
+  });
+})();
+</script>
+</body>
+</html>
